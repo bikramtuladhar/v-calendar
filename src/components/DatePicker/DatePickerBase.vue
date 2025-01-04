@@ -44,6 +44,7 @@ const {
   isDateTimeMode,
   isTimeMode,
   isRange,
+  rangeCount,
   onDayClick,
   onDayMouseEnter,
   onDayKeydown,

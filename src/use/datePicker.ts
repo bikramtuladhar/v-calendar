@@ -104,6 +104,7 @@ export const propsDef = {
   timeAccuracy: { type: Number, default: 2 },
   isRequired: Boolean,
   isRange: Boolean,
+  rangeCount: Number,
   updateOnInput: {
     type: Boolean,
     default: () => getDefault('datePicker.updateOnInput'),
@@ -178,7 +179,7 @@ export function createDatePicker(
   const isTimeMode = computed(() => props.mode.toLowerCase() === 'time');
 
   const isDragging = computed(() => !!dragValue.value);
-
+  const rangeCount = computed(() => props.rangeCount ?? 1);
   const modelConfig = computed(() => {
     let type: DateType = 'date';
     if (props.modelModifiers.number) type = 'number';
@@ -696,7 +697,27 @@ export function createDatePicker(
 
   function onDayMouseEnter(day: CalendarDay, event: MouseEvent) {
     if (!isDragging.value || dragTrackingValue == null) return;
+
+    // Calculate the distance between the start and end dates in days
+    const distance = Math.abs(day.date.getTime() - dragTrackingValue.start.getTime()) / (1000 * 60 * 60 * 24);
+
+    // Ensure the range does not exceed rangeCount.value
+    if (distance >= rangeCount.value) {
+      if (dragTrackingValue.start < day.date) {
+        // Set dragTrackingValue.start to (day.date - rangeCount.value + 1)
+        const newStartDate = new Date(day.date);
+        newStartDate.setDate(day.date.getDate() - (rangeCount.value - 1));
+        dragTrackingValue.start = newStartDate;
+      } else {
+        // Set dragTrackingValue.start to day.date
+        dragTrackingValue.start = day.date;
+      }
+    }
+
+    // Update the end date
     dragTrackingValue.end = day.date;
+
+    // Update the value with the sorted range
     updateValue(sortRange(dragTrackingValue), {
       patch: 'date',
       formatInput: true,
@@ -864,6 +885,7 @@ export function createDatePicker(
     popoverEvents,
     calendarRef,
     isRange,
+    rangeCount: toRef(props, 'rangeCount',1),
     isTimeMode,
     isDateTimeMode,
     is24hr: toRef(props, 'is24hr'),
